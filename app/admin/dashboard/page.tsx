@@ -4,21 +4,20 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Users, 
   BookOpen, 
   CheckCircle, 
   Clock, 
   Plus, 
-  Settings,
-  LogOut,
   FileText,
   UserCheck,
   Calendar
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AdminNavigation from '@/components/AdminNavigation';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardStats {
   totalStudents: number;
@@ -46,6 +45,7 @@ export default function AdminDashboard() {
   
   const [recentExams, setRecentExams] = useState<RecentExam[]>([]);
   const router = useRouter();
+  const { profile } = useAuth();
 
   console.log('AdminDashboard rendered');
 
@@ -107,53 +107,29 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    console.log('Admin logout');
-    router.push('/');
-  };
-
   return (
-    <div className="min-h-screen bg-grademe-gray">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-grademe-dark-slate">GradeMe Admin</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => router.push('/admin/profile')}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-              <Avatar>
-                <AvatarImage src="/admin-avatar.jpg" alt="Admin" />
-                <AvatarFallback>AD</AvatarFallback>
-              </Avatar>
+    <ProtectedRoute requiredUserType="admin">
+      <div className="min-h-screen bg-grademe-gray">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-grademe-dark-slate">GradeMe Admin</h1>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-grademe-dark-slate mb-2">Welcome back, Admin!</h2>
-          <p className="text-gray-600">Here's what's happening with your exams today.</p>
-        </div>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-grademe-dark-slate mb-2">
+              Welcome back, {profile?.full_name || 'Admin'}!
+            </h2>
+            <p className="text-gray-600">Here's what's happening with your exams today.</p>
+          </div>
 
         {/* Quick Navigation */}
         <div className="mb-8">
@@ -288,5 +264,6 @@ export default function AdminDashboard() {
         </Card>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

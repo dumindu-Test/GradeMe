@@ -7,10 +7,10 @@ import {
   BookOpen, 
   Users, 
   BarChart3, 
-  Settings,
-  LogOut
+  Settings
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { UserMenu } from '@/components/UserMenu';
 
 export default function AdminNavigation() {
   const router = useRouter();
@@ -49,16 +49,14 @@ export default function AdminNavigation() {
     }
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    router.push('/');
-  };
-
   return (
     <Card className="bg-white shadow-lg">
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-grademe-dark-slate mb-4">Quick Navigation</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-grademe-dark-slate">Quick Navigation</h3>
+          <UserMenu />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {navigationItems.map((item) => (
             <Button
               key={item.path}
@@ -77,17 +75,6 @@ export default function AdminNavigation() {
               </div>
             </Button>
           ))}
-          <Button
-            variant="outline"
-            className="h-auto p-3 flex flex-col items-center space-y-2 hover:bg-red-50 hover:border-red-200"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            <div className="text-center">
-              <div className="text-xs font-medium">Logout</div>
-              <div className="text-xs opacity-70">Sign out</div>
-            </div>
-          </Button>
         </div>
       </CardContent>
     </Card>
