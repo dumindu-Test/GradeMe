@@ -45,7 +45,7 @@ export default function AdminDashboard() {
   
   const [recentExams, setRecentExams] = useState<RecentExam[]>([]);
   const router = useRouter();
-  const { profile } = useAuth();
+  const { user } = useAuth();
 
   console.log('AdminDashboard rendered');
 
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
           {/* Welcome Section */}
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-grademe-dark-slate mb-2">
-              Welcome back, {profile?.full_name || 'Admin'}!
+              Welcome back, {user?.full_name || 'Admin'}!
             </h2>
             <p className="text-gray-600">Here's what's happening with your exams today.</p>
           </div>
