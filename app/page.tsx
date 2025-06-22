@@ -10,29 +10,28 @@ import { BookOpen, Users, GraduationCap, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmail, signUpWithEmail } from '@/lib/auth';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { signInWithEmailCustom, signUpWithEmailCustom } from '@/lib/custom-auth';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
 
   console.log('LoginPage rendered');
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!loading && user && profile) {
-      console.log('User already authenticated, redirecting:', profile.user_type);
-      if (profile.user_type === 'admin') {
+    if (!loading && user) {
+      console.log('User already authenticated, redirecting:', user.user_type);
+      if (user.user_type === 'admin') {
         router.push('/admin/dashboard');
       } else {
         router.push('/student/dashboard');
       }
     }
-  }, [user, profile, loading, router]);
+  }, [user, loading, router]);
 
   const handleAuth = async (userType: 'admin' | 'student', email: string, password: string) => {
     console.log('Auth attempt:', { userType, email, isSignUp });
@@ -51,39 +50,25 @@ export default function LoginPage() {
 
     try {
       const result = isSignUp 
-        ? await signUpWithEmail(email, password, userType)
-        : await signInWithEmail(email, password);
+        ? await signUpWithEmailCustom(email, password, userType, '')
+        : await signInWithEmailCustom(email, password);
 
       if (result.success && result.user) {
         toast({
           title: isSignUp ? "Account Created" : "Login Successful",
           description: isSignUp 
-            ? "Please check your email to verify your account."
-            : `Welcome back!`,
+            ? "Your account has been created successfully!"
+            : `Welcome back, ${result.user.full_name || result.user.email}!`,
         });
         
-        // For demo mode, we need to manually handle the auth state
-        if (!isSupabaseConfigured() && !isSignUp && result.user) {
-          // Simulate successful auth for demo mode
-          const mockProfile = {
-            id: result.user.id,
-            email: result.user.email!,
-            user_type: result.user.user_metadata?.user_type || userType,
-            full_name: result.user.user_metadata?.full_name || '',
-            created_at: new Date().toISOString()
-          };
-          
-          // Redirect based on user type
-          if (mockProfile.user_type === 'admin') {
-            router.push('/admin/dashboard');
-          } else {
-            router.push('/student/dashboard');
-          }
-        }
+        // Refresh user data in context
+        await refreshUser();
         
-        // Don't redirect immediately for signup - they need to verify email
-        if (!isSignUp) {
-          // Redirect will happen via useEffect when auth state updates (for real Supabase)
+        // Redirect based on user type
+        if (result.user.user_type === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/student/dashboard');
         }
       } else {
         toast({
@@ -250,71 +235,30 @@ export default function LoginPage() {
                   </TabsContent>
                 </Tabs>
                 
-                {/* Sign Up Toggle - only show if Supabase is configured */}
-                {isSupabaseConfigured() && (
-                  <div className="mt-6 text-center">
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => setIsSignUp(!isSignUp)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {isSignUp 
-                        ? 'Already have an account? Sign in' 
-                        : "Don't have an account? Sign up"
-                      }
-                    </Button>
-                  </div>
-                )}
+                {/* Sign Up Toggle */}
+                <div className="mt-6 text-center">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    {isSignUp 
+                      ? 'Already have an account? Sign in' 
+                      : "Don't have an account? Sign up"
+                    }
+                  </Button>
+                </div>
                 
-                {/* Setup Status */}
-                {!isSupabaseConfigured() ? (
-                  <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center mb-2">
-                      <BookOpen className="h-4 w-4 text-blue-600 mr-2" />
-                      <h3 className="font-semibold text-blue-800 text-sm">Demo Mode Active</h3>
-                    </div>
-                    <div className="text-xs text-blue-700 mb-3">
-                      <p>Using demo credentials. Sign up is disabled in demo mode.</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <div className="font-medium text-blue-700">Admin Login:</div>
-                          <div className="text-blue-600">admin@grademe.com / admin123</div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-blue-700">Student Login:</div>
-                          <div className="text-blue-600">student@university.edu / student123</div>
-                        </div>
-                      </div>
-                    </div>
-                    <details className="text-xs">
-                      <summary className="cursor-pointer font-medium text-blue-800 mb-2">
-                        Setup Supabase for full functionality
-                      </summary>
-                      <div className="text-blue-700">
-                        <p>To enable full authentication features:</p>
-                        <ol className="list-decimal list-inside mt-2 space-y-1">
-                          <li>Create a Supabase project at supabase.com</li>
-                          <li>Run the SQL setup script in your Supabase dashboard</li>
-                          <li>Add environment variables to .env.local:</li>
-                          <div className="bg-blue-100 p-2 rounded mt-1 font-mono text-xs">
-                            NEXT_PUBLIC_SUPABASE_URL=your_supabase_url<br/>
-                            NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-                          </div>
-                        </ol>
-                      </div>
-                    </details>
+                {/* Custom Auth Status */}
+                <div className="mt-6 bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-2">
+                    <BookOpen className="h-4 w-4 text-green-600 mr-2" />
+                    <h3 className="font-semibold text-green-800 text-sm">Secure Authentication Active</h3>
                   </div>
-                ) : (
-                  <div className="mt-6 bg-green-50 p-4 rounded-lg border border-green-200">
-                    <div className="flex items-center mb-2">
-                      <BookOpen className="h-4 w-4 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-800 text-sm">Supabase Connected</h3>
-                    </div>
-                    <p className="text-xs text-green-700">
-                      Full authentication features are available. You can sign up for new accounts and sign in with existing ones.
-                    </p>
-                  </div>
-                )}
+                  <p className="text-xs text-green-700">
+                    Custom authentication with encrypted password storage is enabled. You can create new accounts and sign in securely.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -1,5 +1,5 @@
 -- GradeMe Complete Database Setup
--- Generated on: 2025-06-22T15:28:34.605Z
+-- Generated on: 2025-06-22T15:55:21.434Z
 -- This file combines all migrations for easy setup
 
 
@@ -10,9 +10,21 @@
 -- GradeMe Initial Schema Migration
 -- This migration creates the core tables and security policies for the GradeMe exam management system
 
--- Create user_profiles table
+-- Create users table with hashed passwords
+CREATE TABLE IF NOT EXISTS users (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  user_type TEXT NOT NULL CHECK (user_type IN ('admin', 'student')),
+  full_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  last_login TIMESTAMP WITH TIME ZONE,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Create user_profiles table (keeping for compatibility)
 CREATE TABLE IF NOT EXISTS user_profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  id UUID REFERENCES users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   user_type TEXT NOT NULL CHECK (user_type IN ('admin', 'student')),
   full_name TEXT,
@@ -27,7 +39,7 @@ CREATE TABLE IF NOT EXISTS exams (
   description TEXT,
   duration_minutes INTEGER NOT NULL DEFAULT 60,
   total_marks INTEGER NOT NULL DEFAULT 100,
-  created_by UUID REFERENCES auth.users(id) NOT NULL,
+  created_by UUID REFERENCES users(id) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   exam_date TIMESTAMP WITH TIME ZONE,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'cancelled'))
@@ -50,7 +62,7 @@ CREATE TABLE IF NOT EXISTS exam_questions (
 CREATE TABLE IF NOT EXISTS exam_submissions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   exam_id UUID REFERENCES exams(id) ON DELETE CASCADE NOT NULL,
-  student_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  student_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
   answers JSONB NOT NULL DEFAULT '{}', -- {"question_id": "answer", ...}
   score INTEGER,
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -66,6 +78,9 @@ CREATE INDEX IF NOT EXISTS idx_exam_questions_order ON exam_questions(exam_id, o
 CREATE INDEX IF NOT EXISTS idx_exam_submissions_exam_id ON exam_submissions(exam_id);
 CREATE INDEX IF NOT EXISTS idx_exam_submissions_student_id ON exam_submissions(student_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_type ON user_profiles(user_type);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_user_type ON users(user_type);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 
 
 -- ================================================================

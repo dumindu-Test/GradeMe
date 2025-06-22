@@ -12,10 +12,10 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredUserType }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
-  console.log('ProtectedRoute check:', { user: !!user, profile, loading, requiredUserType })
+  console.log('ProtectedRoute check:', { user: !!user, userType: user?.user_type, loading, requiredUserType })
 
   useEffect(() => {
     if (!loading) {
@@ -25,10 +25,10 @@ export function ProtectedRoute({ children, requiredUserType }: ProtectedRoutePro
         return
       }
 
-      if (requiredUserType && profile && profile.user_type !== requiredUserType) {
-        console.log('Wrong user type, redirecting:', profile.user_type, 'required:', requiredUserType)
+      if (requiredUserType && user && user.user_type !== requiredUserType) {
+        console.log('Wrong user type, redirecting:', user.user_type, 'required:', requiredUserType)
         // Redirect to appropriate dashboard
-        if (profile.user_type === 'admin') {
+        if (user.user_type === 'admin') {
           router.push('/admin/dashboard')
         } else {
           router.push('/student/dashboard')
@@ -36,7 +36,7 @@ export function ProtectedRoute({ children, requiredUserType }: ProtectedRoutePro
         return
       }
     }
-  }, [user, profile, loading, router, requiredUserType])
+  }, [user, loading, router, requiredUserType])
 
   if (loading) {
     return (
@@ -57,7 +57,7 @@ export function ProtectedRoute({ children, requiredUserType }: ProtectedRoutePro
     return null // Will redirect to login
   }
 
-  if (requiredUserType && profile && profile.user_type !== requiredUserType) {
+  if (requiredUserType && user && user.user_type !== requiredUserType) {
     return null // Will redirect to appropriate dashboard
   }
 
