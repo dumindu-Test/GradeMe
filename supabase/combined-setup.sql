@@ -1,5 +1,5 @@
 -- GradeMe Complete Database Setup
--- Generated on: 2025-06-22T15:02:29.941Z
+-- Generated on: 2025-06-22T15:28:34.605Z
 -- This file combines all migrations for easy setup
 
 
